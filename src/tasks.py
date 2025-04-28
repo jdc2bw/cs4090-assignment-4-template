@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # File path for task storage
 DEFAULT_TASKS_FILE = "tasks.json"
@@ -123,3 +123,48 @@ def get_overdue_tasks(tasks):
         if not task.get("completed", False) and 
            task.get("due_date", "") < today
     ]
+    
+def get_due_soon_tasks(tasks):
+    """
+    Get tasks that are due within the next 24 hours and not completed.
+    
+    Args:
+        tasks (list): List of task dictionaries
+        
+    Returns:
+        list: List of due-soon tasks
+    """
+    now = datetime.now()
+    tomorrow = now + timedelta(days=1)
+    due_soon_tasks = []
+    for task in tasks:
+        if task.get("completed", False):
+            continue
+        due_date_str = task.get("due_date", "")
+        if due_date_str:
+            try:
+                due_date = datetime.strptime(due_date_str, "%Y-%m-%d")
+                if now <= due_date <= tomorrow:
+                    due_soon_tasks.append(task)
+            except ValueError:
+                continue  # Skip invalid dates
+    return due_soon_tasks
+
+def sort_tasks_by_priority(tasks):
+    """
+    Sort tasks by priority: High > Medium > Low.
+    """
+    priority_order = {"High": 1, "Medium": 2, "Low": 3}
+    return sorted(tasks, key=lambda t: priority_order.get(t.get("priority", "Low"), 3))
+
+def sort_tasks_by_due_date(tasks):
+    """
+    Sort tasks by due date (earliest first).
+    """
+    def parse_due_date(task):
+        try:
+            return datetime.strptime(task.get("due_date", ""), "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return datetime.max  # Push tasks with no/invalid dates to end
+    return sorted(tasks, key=parse_due_date)
+
